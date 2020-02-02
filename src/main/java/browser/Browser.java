@@ -3,6 +3,7 @@ package browser;
 import hibernate.HibernateManager;
 //In first place the imports
 import hibernate.HibernateUtil;
+import mongo.MongoUtil;
 import errorControl.ErrorControl;
 import errorControl.ErrorControl.ErrorType;
 
@@ -26,7 +27,8 @@ public class Browser {
 	private File _currentDirectory; // The current directory in which we are
 	private EntryType _lastEntry; // The last type of command entered
 	private SimpleDateFormat _sdf; // The default format of our program for dates
-	private HibernateManager _connector; // An object with the ability to extract data data from databases
+	//private HibernateManager _connector; // An object with the ability to extract data data from databases with hibernate
+	private MongoUtil _connector; // An object with the ability to extract data data from databases with mongo
 	private ErrorControl _ec; // Our error control object
 	private Scanner _sc; // The scanner of the keyboard
 
@@ -34,6 +36,7 @@ public class Browser {
 	public static void main(String args[]) {
 		// This line removes any hibernate startup log.
 		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
+		java.util.logging.Logger.getLogger("org.mongodb").setLevel(Level.OFF);
 		new Browser();
 	}
 
@@ -43,7 +46,8 @@ public class Browser {
 		_currentDirectory = new File(System.getProperty("user.dir"));
 		_lastEntry = null;
 		_sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		_connector = new HibernateManager(_idiom);
+		//_connector = new HibernateManager(_idiom);
+		_connector = new MongoUtil(_idiom);
 		_ec = new ErrorControl(_connector);
 		_sc = new Scanner(System.in);
 
@@ -86,6 +90,7 @@ public class Browser {
 		String parameters = "";
 		if (entry.obtainParameters() != null) {
 			for (String p : entry.obtainParameters()) {
+				if(p == null) {p = "";}
 				parameters = parameters + p + " ";
 			}
 		}

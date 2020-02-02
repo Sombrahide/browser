@@ -1,11 +1,15 @@
 package errorControl;
 
 import hibernate.HibernateManager;
+import mongo.MongoUtil;
 
 public class ErrorControl {
 	
-	//The connector to obtain the error texts
-	private HibernateManager _connector;
+	//The connector to obtain the error texts with hibernate
+	//private HibernateManager _connector;
+	
+	//The connector to obtain the error texts with mongo
+	private MongoUtil _connector;
 	
 	//The different types of errors contemplated by the program.
 	public static enum ErrorType{
@@ -27,7 +31,7 @@ public class ErrorControl {
 	}
 
 	//The class builder
-	public ErrorControl (HibernateManager connector) {
+	public ErrorControl (MongoUtil connector) {
 		this._connector = connector;
 	}
 	//It will return a String according to the type of error that is given.

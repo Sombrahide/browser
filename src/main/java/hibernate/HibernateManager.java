@@ -32,7 +32,7 @@ public class HibernateManager {
 
 		// The constructor of the class
 		public HibernateManager(Idiom idiom) {
-			ec = new ErrorControl(this);
+			//ec = new ErrorControl(this);
 			session = HibernateUtil.getSessionFactory().openSession();
 			changeIdiom(idiom);
 		}
@@ -91,8 +91,8 @@ public class HibernateManager {
 			}
 		}
 
-		// a method for get all the logs
-		public List<log> getLog() {
+		// A method for get all the logs
+		private List<log> getLog() {
 			if (session != null) {
 				List<log> result = (List<log>) (session
 						.createQuery("from log")
