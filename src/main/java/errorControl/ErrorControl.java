@@ -1,12 +1,13 @@
 package errorControl;
 
-import hibernate.HibernateManager;
+
+//import hibernate.HibernateManager;
 import mongo.MongoUtil;
 
 public class ErrorControl {
 	
 	//The connector to obtain the error texts with hibernate
-	//private HibernateManager _connector;
+	//private MongoUtil _connector;
 	
 	//The connector to obtain the error texts with mongo
 	private MongoUtil _connector;
@@ -88,6 +89,7 @@ public class ErrorControl {
 		default:
 			break;
 		}
+		
 		return text;
 	}
 	

@@ -2,10 +2,8 @@ package mongo;
 
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.List;
 
 import com.mongodb.*;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
@@ -16,13 +14,24 @@ import browser.TreatEntry.Idiom;
 
 import org.bson.Document;
 
-import errorControl.ErrorControl.ErrorType;
-import hibernate.mapping.literal;
 
 public class MongoUtil {
 	MongoClient _mongoClient;
 	MongoDatabase _database;
 	String _idiom;
+	
+	private boolean _debugActivated;
+	private boolean _warningActivated;
+	private boolean _errorActivated;
+	private boolean _commandActivated;
+	
+	//The different types of logs
+	public enum LogType{
+		DEBUG,
+		WARNING,
+		ERROR,
+		COMMAND
+	}
 	
 	// A method for change the idiom of research in the querys
 	public void changeIdiom(Idiom idiom) {
@@ -41,6 +50,10 @@ public class MongoUtil {
 		changeIdiom(idiom);
 		_mongoClient = new MongoClient(new MongoClientURI("mongodb://localhost:27017"));
 		_database = _mongoClient.getDatabase("directorybrowser");
+		_debugActivated = false;
+		_warningActivated = true;
+		_errorActivated = true;
+		_commandActivated = true;
 	}
 	
 	// A method to get the text from the literal collection
@@ -59,10 +72,40 @@ public class MongoUtil {
 		return result;
 	}
 	
+	
+	// The method for create and save the logs
+	public void createLog(LogType logtype, String description) {
+		if((logtype.equals(LogType.DEBUG)&&(_debugActivated))||
+				(logtype.equals(LogType.ERROR)&&(_errorActivated))||
+				(logtype.equals(LogType.WARNING)&&(_warningActivated))||
+				(logtype.equals(LogType.COMMAND)&&(_commandActivated))) {
+			Timestamp timestamp = new Timestamp(new Date().getTime());
+			String type = "";
+			switch(logtype) {
+			case DEBUG:
+				type = "Debug";
+				break;
+			case WARNING:
+				type = "Warning";
+				break;
+			case ERROR:
+				type = "Error";
+				break;
+			case COMMAND:
+				type = "Command";
+				break;
+			}
+			MongoCollection<Document> collection = _database.getCollection("log");
+			Document log = new Document("timestamp", (Date) timestamp).append("type", type).append("description", description);
+			collection.insertOne(log);
+		}
+	}
+	
 	// A method for save the logs
-	public void uploadLog(Timestamp timestamp, String command, String parameters) {
+	public void uploadLog(Timestamp timestamp,String type, String command, String parameters) {
 		MongoCollection<Document> collection = _database.getCollection("log");
 		Document log = new Document("timestamp", (Date) timestamp)
+				.append("type", type)
 				.append("command", command)
 				.append("parameters", parameters);
 		collection.insertOne(log);

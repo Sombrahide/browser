@@ -1,14 +1,15 @@
 package browser;
 
-import hibernate.HibernateManager;
+//import hibernate.HibernateManager;
 //In first place the imports
-import hibernate.HibernateUtil;
+//import hibernate.HibernateUtil;
 import mongo.MongoUtil;
+import mongo.MongoUtil.LogType;
 import errorControl.ErrorControl;
 import errorControl.ErrorControl.ErrorType;
 
 import java.util.Scanner;
-import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import browser.TreatEntry.EntryType;
 import browser.TreatEntry.Idiom;
@@ -16,7 +17,6 @@ import browser.TreatEntry.SortType;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -35,9 +35,11 @@ public class Browser {
 	// The main to start the program
 	public static void main(String args[]) {
 		// This line removes any hibernate startup log.
-		java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
-		java.util.logging.Logger.getLogger("org.mongodb").setLevel(Level.OFF);
-		new Browser();
+	    //Logger.getLogger("org.hibernate").setLevel(java.util.logging.Level.SEVERE);
+		
+		// This line removes any mongo startup log.
+	    Logger.getLogger("org.mongodb").setLevel(java.util.logging.Level.SEVERE);
+	    new Browser();
 	}
 
 	// The constructor of the class
@@ -46,8 +48,8 @@ public class Browser {
 		_currentDirectory = new File(System.getProperty("user.dir"));
 		_lastEntry = null;
 		_sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		//_connector = new HibernateManager(_idiom);
 		_connector = new MongoUtil(_idiom);
+		//_connector = new MongoUtil(_idiom);
 		_ec = new ErrorControl(_connector);
 		_sc = new Scanner(System.in);
 
@@ -67,7 +69,7 @@ public class Browser {
 			entryText = _sc.nextLine();
 			treatEntryText = new TreatEntry(entryText);
 			parameters = treatEntryText.obtainParameters();
-			uploadLog(treatEntryText);
+			uploadLog(treatEntryText, LogType.COMMAND);
 			switch (treatEntryText.obtainEntryType()) {
 			case SCRIPT:
 				this.commandSCRIPT(parameters[0]);
@@ -85,16 +87,16 @@ public class Browser {
 	}
 
 	// A small method to obtain the necessary data and create a log
-	private void uploadLog(TreatEntry entry) {
-		Timestamp ts = new Timestamp((new Date().getTime()));
-		String parameters = "";
+	private void uploadLog(TreatEntry entry, LogType type) {
+		String parameters = entry.obtainCommand();
 		if (entry.obtainParameters() != null) {
+			parameters = parameters+": ";
 			for (String p : entry.obtainParameters()) {
 				if(p == null) {p = "";}
 				parameters = parameters + p + " ";
 			}
 		}
-		_connector.uploadLog(ts, entry.obtainCommand(), parameters);
+		_connector.createLog(type, parameters);
 	}
 
 	// Find the type of entry and execute the appropriate method
@@ -149,6 +151,7 @@ public class Browser {
 			break;
 		case ERROR:
 			this.commandERROR(entry.obtainError());
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(entry.obtainError()));
 			break;
 		default:
 			break;
@@ -163,13 +166,14 @@ public class Browser {
 		if (_currentDirectory.getPath() == "") {
 			auxD = new File(parameter);
 		} else {
-			auxD = new File(_currentDirectory.getPath() + _currentDirectory.separator + parameter);
+			auxD = new File(_currentDirectory.getPath() + File.separator + parameter);
 		}
 		if (auxD.exists() && auxD.isDirectory()) {
 			_previousDirectory = _currentDirectory;
 			_currentDirectory = auxD;
 		} else {
 			_ec.printError(ErrorType.DIRECTORYNOTFOUND);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYNOTFOUND));
 		}
 		_lastEntry = EntryType.GOTO;
 		auxD = null;
@@ -186,6 +190,7 @@ public class Browser {
 			auxD = null;
 		} else {
 			_ec.printError(ErrorType.DIRECTORYNOTFOUND);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYNOTFOUND));
 		}
 	}
 
@@ -198,6 +203,7 @@ public class Browser {
 			}
 		} else {
 			_ec.printError(ErrorType.DIRECTORYEMPTY);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYEMPTY));
 		}
 		_lastEntry = EntryType.LIST;
 		elementsList = null;
@@ -209,6 +215,7 @@ public class Browser {
 			_currentDirectory = _currentDirectory.getAbsoluteFile().getParentFile();
 		} else {
 			_ec.printError(ErrorType.NOMOREUP);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.NOMOREUP));
 		}
 		_lastEntry = EntryType.UP;
 	}
@@ -222,6 +229,7 @@ public class Browser {
 					+ _sdf.format(new Date(auxD.lastModified())));
 		} else {
 			_ec.printError(ErrorType.FILENOTFOUND);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.FILENOTFOUND));
 		}
 		_lastEntry = EntryType.INFOFILE;
 		auxD = null;
@@ -236,6 +244,7 @@ public class Browser {
 					+ _sdf.format(new Date(auxD.lastModified())));
 		} else {
 			_ec.printError(ErrorType.DIRECTORYNOTFOUND);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYNOTFOUND));
 		}
 		_lastEntry = EntryType.INFODIR;
 		auxD = null;
@@ -307,6 +316,7 @@ public class Browser {
 			break;
 		default:
 			_ec.printError(ErrorType.COMMANDNOTFOUND);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.COMMANDNOTFOUND));
 			break;
 		}
 	}
@@ -320,6 +330,7 @@ public class Browser {
 				auxD.mkdir();
 			} else {
 				_ec.printError(ErrorType.DIRECTORYEXIST);
+				_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYEXIST));
 			}
 		}
 		_lastEntry = EntryType.CREATEDIR;
@@ -339,6 +350,7 @@ public class Browser {
 				}
 			} else {
 				_ec.printError(ErrorType.FILEEXIST);
+				_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.FILEEXIST));
 			}
 			_lastEntry = EntryType.CREATEFILE;
 			auxD = null;
@@ -359,6 +371,7 @@ public class Browser {
 				auxD.delete();
 			} else {
 				_ec.printError(ErrorType.DIRECTORYNOTFOUND);
+				_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYNOTFOUND));
 			}
 		}
 		_lastEntry = EntryType.DELETEDIR;
@@ -374,6 +387,7 @@ public class Browser {
 				auxD.delete();
 			} else {
 				_ec.printError(ErrorType.FILENOTFOUND);
+				_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.FILENOTFOUND));
 			}
 		}
 	}
@@ -421,6 +435,7 @@ public class Browser {
 			}
 		} else {
 			_ec.printError(ErrorType.DIRECTORYEMPTY);
+			_connector.createLog(LogType.WARNING, _ec.getErrorText(ErrorType.DIRECTORYEMPTY));
 		}
 		_lastEntry = EntryType.SORTBY;
 		entries = null;

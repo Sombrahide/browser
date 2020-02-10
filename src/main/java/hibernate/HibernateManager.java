@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import java.util.List;
 
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 
 import browser.TreatEntry.Idiom;
 import errorControl.ErrorControl;
@@ -118,11 +117,13 @@ public class HibernateManager {
 		
 		//  A method for delete all the logs
 		public void dropLog(){
-			List<log> list = getLog(); 
-			session.beginTransaction();
-			for(log l : list) {
-				session.delete(l);
-			}
-			session.getTransaction().commit();
+			if (session != null) {
+				session.beginTransaction();
+				session.createSQLQuery("TRUNCATE TABLE log").executeUpdate();
+				session.getTransaction().commit();
+				session.clear();
+			} else {
+				ec.printError(ErrorType.SESSIONNULL);
+			}	
 		}
 }
