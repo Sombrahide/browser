@@ -101,16 +101,6 @@ public class MongoUtil {
 		}
 	}
 	
-	// A method for save the logs
-	public void uploadLog(Timestamp timestamp,String type, String command, String parameters) {
-		MongoCollection<Document> collection = _database.getCollection("log");
-		Document log = new Document("timestamp", (Date) timestamp)
-				.append("type", type)
-				.append("command", command)
-				.append("parameters", parameters);
-		collection.insertOne(log);
-	}
-	
 	// A method for delete all the logs
 	public void dropLog() {
 		MongoCollection<Document> collection = _database.getCollection("log");
